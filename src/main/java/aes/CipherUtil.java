@@ -133,22 +133,20 @@ public class CipherUtil {
 	
 	
 
-	public static void encryptFile
-	        (String plainFile, String cipherFile, String strkey) {
+	public static void encryptFile(String plainFile, String cipherFile, String strkey) {
 		try {
 			getKey(strkey); //key 파일에 등록
-			ObjectInputStream ois = 
-			 new ObjectInputStream(new FileInputStream("key.ser"));
-			Key key = (Key) ois.readObject();
+			//암호화시에 사용될 키를 파일에서 읽어오기
+			ObjectInputStream ois = new ObjectInputStream(new FileInputStream("key.ser"));
+			Key key = (Key)ois.readObject();
 			ois.close();
-			AlgorithmParameterSpec paramSpec = 
-					                        new IvParameterSpec(iv);
+			//초기화블럭 : CBC모드에서 필요
+			AlgorithmParameterSpec paramSpec = new IvParameterSpec(iv);
 			cipher.init(Cipher.ENCRYPT_MODE, key, paramSpec);
-			FileInputStream fis = new FileInputStream(plainFile);
-			FileOutputStream fos = new FileOutputStream(cipherFile);
+			FileInputStream fis = new FileInputStream(plainFile); //"p1.txt" => 원본파일
+			FileOutputStream fos = new FileOutputStream(cipherFile); //"c.sec" => 암호화 파일
 			//암호 관련 스트림
-			CipherOutputStream cos = new CipherOutputStream
-					                                 (fos, cipher);
+			CipherOutputStream cos = new CipherOutputStream(fos, cipher);
 			byte[] buf = new byte[1024];
 			int len;
 			while ((len = fis.read(buf)) != -1) {
@@ -163,38 +161,29 @@ public class CipherUtil {
 	//key.ser 파일에 키를 등록.
 	private static void getKey(String key) throws Exception {
 		Key genkey = new SecretKeySpec(makeKey(key), "AES");
-		//키를 파일에 저장.
-		ObjectOutputStream out = new ObjectOutputStream
-				                 (new FileOutputStream("key.ser"));
+		//key.ser 파일에 getkey객체를 출력. : 직렬화.
+		ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream("key.ser"));
 		out.writeObject(genkey);
 		out.flush();	out.close();
 	}
-	public static void decryptFile
-	                    (String cipherFile, String plainFile) {
+	public static void decryptFile(String cipherFile, String plainFile) {
 		try {
-			ObjectInputStream ois = new ObjectInputStream
-					               (new FileInputStream("key.ser"));
+			ObjectInputStream ois = new ObjectInputStream(new FileInputStream("key.ser"));
 			Key key = (Key) ois.readObject();
 			ois.close();
-			AlgorithmParameterSpec paramSpec = 
-					                        new IvParameterSpec(iv);
+			AlgorithmParameterSpec paramSpec = new IvParameterSpec(iv);
+			//복호화 모드
 			cipher.init(Cipher.DECRYPT_MODE, key, paramSpec);
-			FileInputStream fis = new FileInputStream(cipherFile);
-			FileOutputStream fos = new FileOutputStream(plainFile);
-			CipherOutputStream cos = new CipherOutputStream
-					                                (fos, cipher);
+			FileInputStream fis = new FileInputStream(cipherFile); //c.sec 
+			FileOutputStream fos = new FileOutputStream(plainFile); //p2.txt
+			CipherOutputStream cos = new CipherOutputStream(fos, cipher);
 			byte[] buf = new byte[1024];
 			int len;
 			while ((len = fis.read(buf)) != -1) {
 				cos.write(buf, 0, len); //복호화된 내용을 출력
 			}
-			fis.close();
-			cos.flush();
-			fos.flush();
-			cos.close();
-			fos.close();
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
+			fis.close();			cos.flush();
+			fos.flush();			cos.close();			fos.close();
+		} catch (Exception e) {			e.printStackTrace();		}
 	}
 }
